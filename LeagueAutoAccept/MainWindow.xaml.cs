@@ -37,7 +37,7 @@ public partial class MainWindow : FluentWindow
         {
             // I will use a placeholder for the repository URL.
             // Replace "your-username/your-repo" with your actual GitHub repository.
-            var source = new GithubSource("https://github.com/savelievel/LeagueAutoAccept", null, false);
+            var source = new GithubSource("https://github.com/RaspizDIYs/LeagueAutoAccept", null, false);
             var manager = new UpdateManager(source);
 
             var newVersion = await manager.CheckForUpdatesAsync();
