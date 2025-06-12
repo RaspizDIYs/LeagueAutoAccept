@@ -1,6 +1,7 @@
 ﻿using System.Configuration;
 using System.Data;
 using System.Windows;
+using Velopack;
 
 namespace LeagueAutoAccept;
 
@@ -9,4 +10,8 @@ namespace LeagueAutoAccept;
 /// </summary>
 public partial class App : Application
 {
+    public App()
+    {
+        VelopackApp.Build().Run();
+    }
 }

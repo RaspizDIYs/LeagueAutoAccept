@@ -1,5 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# 
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LeagueAutoAccept", "LeagueAutoAccept\LeagueAutoAccept.csproj", "{984FB7ED-1331-43A5-8E20-8011D4649EAE}"
 EndProject
 Global
