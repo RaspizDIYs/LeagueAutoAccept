@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:LeagueAutoAccept"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:tb="http://www.hardcodet.net/taskbar"
         mc:Ignorable="d"
         Title="League Auto Accept"
         Height="250" Width="250"
@@ -13,15 +14,40 @@
         ExtendsContentIntoTitleBar="True"
         WindowCornerPreference="Round"
         WindowBackdropType="Mica"
-        ResizeMode="NoResize">
-    <Grid>
-        <ui:TitleBar DockPanel.Dock="Top"
-                     Margin="-15,-2,0,0" 
-                     Title="{Binding Title, RelativeSource={RelativeSource AncestorType={x:Type ui:FluentWindow}}}"
-                     ShowMaximize="False"
-                     ShowMinimize="True">
-        </ui:TitleBar>
-        <ui:ToggleSwitch x:Name="AutoAcceptToggle" Content="Автопринятие" Click="AutoAcceptToggle_OnClick"
-                         HorizontalAlignment="Center" VerticalAlignment="Center" />
-    </Grid>
+        ResizeMode="NoResize"
+        Icon="icon.ico">
+
+    <DockPanel>
+        <tb:TaskbarIcon
+            x:Name="NotifyIcon"
+            DataContext="{Binding ElementName=AutoAcceptToggle}"
+            IconSource="pack://application:,,,/icon.ico"
+            ToolTipText="League Auto Accept"
+            TrayMouseDoubleClick="NotifyIcon_OnTrayMouseDoubleClick"
+            Visibility="Collapsed">
+            <tb:TaskbarIcon.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Показать" Click="MenuItemShow_OnClick"/>
+                    <Separator/>
+                    <MenuItem Header="Автопринятие"
+                              IsCheckable="True"
+                              IsChecked="{Binding Path=IsChecked, Mode=TwoWay}"/>
+                    <Separator/>
+                    <MenuItem Header="Выход" Click="MenuItemExit_OnClick"/>
+                </ContextMenu>
+            </tb:TaskbarIcon.ContextMenu>
+        </tb:TaskbarIcon>
+
+        <Grid>
+            <ui:TitleBar DockPanel.Dock="Top"
+                         Margin="-15,-2,0,0" 
+                         Title="{Binding Title, RelativeSource={RelativeSource AncestorType={x:Type ui:FluentWindow}}}"
+                         ShowMaximize="False"
+                         ShowMinimize="True">
+            </ui:TitleBar>
+            <ui:ToggleSwitch x:Name="AutoAcceptToggle" Content="Автопринятие" 
+                             Checked="AutoAccept_StateChanged" Unchecked="AutoAccept_StateChanged"
+                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Grid>
+    </DockPanel>
 </ui:FluentWindow>

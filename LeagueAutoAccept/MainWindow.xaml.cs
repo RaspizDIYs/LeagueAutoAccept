@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using Velopack;
 using Velopack.Sources;
 using Wpf.Ui.Controls;
+using Application = System.Windows.Application;
 
 namespace LeagueAutoAccept;
 
@@ -22,15 +23,51 @@ public partial class MainWindow : FluentWindow
     {
         InitializeComponent();
         Debug.WriteLine("MainWindow initialized.");
+        
         Closing += (_, _) =>
         {
             Debug.WriteLine("MainWindow closing, cancelling background task.");
             _autoAcceptCts?.Cancel();
+            NotifyIcon.Dispose();
         };
+
+        CheckForUpdates();
+    }
+
+    protected override void OnStateChanged(EventArgs e)
+    {
+        if (WindowState == WindowState.Minimized)
+        {
+            Hide();
+            NotifyIcon.Visibility = Visibility.Visible;
+        }
         
-         CheckForUpdates();
+        base.OnStateChanged(e);
     }
     
+    private void ShowWindow()
+    {
+        Show();
+        WindowState = WindowState.Normal;
+        Activate();
+        NotifyIcon.Visibility = Visibility.Collapsed;
+    }
+
+    private void MenuItemShow_OnClick(object sender, RoutedEventArgs e)
+    {
+        ShowWindow();
+    }
+
+    private void MenuItemExit_OnClick(object sender, RoutedEventArgs e)
+    {
+        Application.Current.Shutdown();
+    }
+
+    private void NotifyIcon_OnTrayMouseDoubleClick(object sender, RoutedEventArgs e)
+    {
+        ShowWindow();
+    }
+
     private async Task CheckForUpdates()
     {
         try
@@ -57,11 +94,9 @@ public partial class MainWindow : FluentWindow
         }
     }
 
-    private void AutoAcceptToggle_OnClick(object sender, RoutedEventArgs e)
+    private void AutoAccept_StateChanged(object sender, RoutedEventArgs e)
     {
-        if (sender is not ToggleSwitch toggleSwitch) return;
-
-        if (toggleSwitch.IsChecked == true)
+        if (AutoAcceptToggle.IsChecked == true)
         {
             Debug.WriteLine("Auto-accept toggled ON.");
             var credentials = LcuApi.GetCredentials();
@@ -102,7 +137,7 @@ public partial class MainWindow : FluentWindow
                             Debug.WriteLine("Exception in auto-accept task. Stopping task.");
                             if (!cancellationToken.IsCancellationRequested)
                             {
-                                Dispatcher.Invoke(() => toggleSwitch.IsChecked = false);
+                                Dispatcher.Invoke(() => AutoAcceptToggle.IsChecked = false);
                             }
                             break;
                         }
@@ -124,7 +159,7 @@ public partial class MainWindow : FluentWindow
             {
                 Debug.WriteLine("Credentials not found. Toggling switch off.");
                 System.Windows.MessageBox.Show("Не удалось найти клиент League of Legends. Убедитесь, что он запущен.");
-                toggleSwitch.IsChecked = false;
+                AutoAcceptToggle.IsChecked = false;
             }
         }
         else
