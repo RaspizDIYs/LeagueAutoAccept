@@ -1,23 +1,47 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Velopack;
 using Velopack.Sources;
 using Wpf.Ui.Controls;
 using Application = System.Windows.Application;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using Hardcodet.Wpf.TaskbarNotification;
+using LeagueAutoAccept.Services;
 
 namespace LeagueAutoAccept;
 
 /// <summary>
 /// Interaction logic for MainWindow.xaml
 /// </summary>
-public partial class MainWindow : FluentWindow
+public partial class MainWindow : FluentWindow, INotifyPropertyChanged
 {
-    private CancellationTokenSource? _autoAcceptCts;
+    private readonly AutoAcceptService _autoAcceptService;
+    private bool _isAutoAcceptEnabled;
+    public bool IsAutoAcceptEnabled
+    {
+        get => _isAutoAcceptEnabled;
+        set
+        {
+            Debug.WriteLine($"[IsAutoAcceptEnabled] Current: {_isAutoAcceptEnabled}, New: {value}");
+            if (_isAutoAcceptEnabled == value) return;
+            _isAutoAcceptEnabled = value;
+            OnPropertyChanged();
+            
+            if (_isAutoAcceptEnabled)
+            {
+                Debug.WriteLine("[IsAutoAcceptEnabled] Starting auto accept service");
+                _autoAcceptService.StartAutoAccept();
+            }
+            else
+            {
+                Debug.WriteLine("[IsAutoAcceptEnabled] Stopping auto accept service");
+                _autoAcceptService.StopAutoAccept();
+            }
+        }
+    }
 
     public MainWindow()
     {
@@ -26,12 +50,18 @@ public partial class MainWindow : FluentWindow
         
         Closing += (_, _) =>
         {
-            Debug.WriteLine("MainWindow closing, cancelling background task.");
-            _autoAcceptCts?.Cancel();
+            Debug.WriteLine("MainWindow closing.");
             NotifyIcon.Dispose();
         };
 
-        CheckForUpdates();
+        DataContext = this;
+        _autoAcceptService = new AutoAcceptService();
+        _ = CheckForUpdates();
+    }
+
+    private async void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        await CheckForUpdates();
     }
 
     protected override void OnStateChanged(EventArgs e)
@@ -72,15 +102,12 @@ public partial class MainWindow : FluentWindow
     {
         try
         {
-            // I will use a placeholder for the repository URL.
-            // Replace "your-username/your-repo" with your actual GitHub repository.
             var source = new GithubSource("https://github.com/RaspizDIYs/LeagueAutoAccept", null, false);
             var manager = new UpdateManager(source);
 
             var newVersion = await manager.CheckForUpdatesAsync();
             if (newVersion == null)
             {
-                // No updates available.
                 return;
             }
 
@@ -89,83 +116,30 @@ public partial class MainWindow : FluentWindow
         }
         catch (Exception ex)
         {
-            // Handle exceptions, e.g., log them or show a message to the user.
             Debug.WriteLine($"Error checking for updates: {ex.Message}");
         }
     }
 
-    private void AutoAccept_StateChanged(object sender, RoutedEventArgs e)
+    private void ToggleSwitch_OnToggled(object sender, RoutedEventArgs e)
     {
-        if (AutoAcceptToggle.IsChecked == true)
+        if (sender is ToggleSwitch toggleSwitch)
         {
-            Debug.WriteLine("Auto-accept toggled ON.");
-            var credentials = LcuApi.GetCredentials();
-            if (credentials.HasValue)
-            {
-                Debug.WriteLine("Credentials found, starting auto-accept task.");
-                _autoAcceptCts = new CancellationTokenSource();
-                var cancellationToken = _autoAcceptCts.Token;
-                var (port, authToken) = credentials.Value;
-
-                Task.Run(async () =>
-                {
-                    Debug.WriteLine("Auto-accept task started.");
-                    while (!cancellationToken.IsCancellationRequested)
-                    {
-                        try
-                        {
-                            var response = await LcuApi.Request("GET", "/lol-matchmaking/v1/ready-check", port, authToken);
-                            if (!string.IsNullOrEmpty(response))
-                            {
-                                try
-                                {
-                                    var json = JObject.Parse(response);
-                                    if (json["state"]?.ToString() == "InProgress")
-                                    {
-                                        Debug.WriteLine("Match ready check is 'InProgress'. Accepting match.");
-                                        await LcuApi.Request("POST", "/lol-matchmaking/v1/ready-check/accept", port, authToken);
-                                    }
-                                }
-                                catch (JsonReaderException)
-                                {
-                                    Debug.WriteLine("Received non-JSON response from ready-check endpoint.");
-                                }
-                            }
-                        }
-                        catch (Exception)
-                        {
-                            Debug.WriteLine("Exception in auto-accept task. Stopping task.");
-                            if (!cancellationToken.IsCancellationRequested)
-                            {
-                                Dispatcher.Invoke(() => AutoAcceptToggle.IsChecked = false);
-                            }
-                            break;
-                        }
-
-                        try
-                        {
-                            await Task.Delay(1000, cancellationToken);
-                        }
-                        catch (TaskCanceledException)
-                        {
-                            Debug.WriteLine("Task.Delay cancelled, exiting loop.");
-                            break;
-                        }
-                    }
-                    Debug.WriteLine("Auto-accept task finished.");
-                }, cancellationToken);
-            }
-            else
-            {
-                Debug.WriteLine("Credentials not found. Toggling switch off.");
-                System.Windows.MessageBox.Show("Не удалось найти клиент League of Legends. Убедитесь, что он запущен.");
-                AutoAcceptToggle.IsChecked = false;
-            }
+            IsAutoAcceptEnabled = toggleSwitch.IsChecked ?? false;
         }
-        else
+    }
+
+    private void TrayMenuItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem)
         {
-            Debug.WriteLine("Auto-accept toggled OFF. Cancelling task.");
-            _autoAcceptCts?.Cancel();
+            IsAutoAcceptEnabled = menuItem.IsChecked;
         }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

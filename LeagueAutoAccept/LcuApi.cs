@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using LeagueAutoAccept.Utils;
 
 namespace LeagueAutoAccept;
 
@@ -15,7 +16,8 @@ public class LcuApi
     {
         var handler = new HttpClientHandler
         {
-            ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+            ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
+            SslProtocols = System.Security.Authentication.SslProtocols.Tls12
         };
         HttpClient = new HttpClient(handler);
     }
@@ -86,5 +88,38 @@ public class LcuApi
         }
 
         return responseString;
+    }
+
+    public static async Task<bool> IsInMatch()
+    {
+        try
+        {
+            var credentials = await LcuUtils.GetLcuCredentials();
+            if (credentials == null) return false;
+            
+            var response = await HttpClient.GetAsync($"{credentials.Protocol}://127.0.0.1:{credentials.Port}/lol-gameflow/v1/session");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error checking match: {ex.Message}");
+            return false;
+        }
+    }
+
+    public static async Task AcceptMatch()
+    {
+        try
+        {
+            var credentials = await LcuUtils.GetLcuCredentials();
+            if (credentials == null) throw new Exception("Failed to get LCU credentials");
+            
+            await HttpClient.PostAsync($"{credentials.Protocol}://127.0.0.1:{credentials.Port}/lol-matchmaking/v1/ready-check/accept", null);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error accepting match: {ex.Message}");
+            throw;
+        }
     }
 } 

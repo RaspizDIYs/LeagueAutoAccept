@@ -8,8 +8,8 @@
         xmlns:tb="http://www.hardcodet.net/taskbar"
         mc:Ignorable="d"
         Title="League Auto Accept"
-        Height="250" Width="250"
-        MinHeight="250" MinWidth="250"
+        Height="150" Width="250"
+        MinHeight="150" MinWidth="250"
         WindowStartupLocation="CenterScreen" 
         ExtendsContentIntoTitleBar="True"
         WindowCornerPreference="Round"
@@ -45,9 +45,13 @@
                          ShowMaximize="False"
                          ShowMinimize="True">
             </ui:TitleBar>
-            <ui:ToggleSwitch x:Name="AutoAcceptToggle" Content="Автопринятие" 
-                             Checked="AutoAccept_StateChanged" Unchecked="AutoAccept_StateChanged"
-                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <ui:ToggleSwitch x:Name="AutoAcceptToggle" 
+                         Content="Автопринятие"
+                         VerticalAlignment="Center"
+                         HorizontalAlignment="Center"
+                         IsChecked="{Binding IsAutoAcceptEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Checked="ToggleSwitch_OnToggled"
+                         Unchecked="ToggleSwitch_OnToggled"/>
         </Grid>
     </DockPanel>
 </ui:FluentWindow>
