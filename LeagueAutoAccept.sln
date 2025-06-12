@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LeagueAutoAccept", "LeagueAutoAccept\LeagueAutoAccept.csproj", "{984FB7ED-1331-43A5-8E20-8011D4649EAE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{984FB7ED-1331-43A5-8E20-8011D4649EAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{984FB7ED-1331-43A5-8E20-8011D4649EAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{984FB7ED-1331-43A5-8E20-8011D4649EAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{984FB7ED-1331-43A5-8E20-8011D4649EAE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
