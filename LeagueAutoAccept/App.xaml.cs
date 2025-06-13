@@ -17,18 +17,45 @@ public partial class App : Application
     
     public App()
     {
-        VelopackApp.Build().Run();
     }
     
     protected override void OnStartup(StartupEventArgs e)
     {
-        _mutex = new Mutex(true, AppName, out var createdNew);
-
-        if (!createdNew)
+        try
         {
-            Current.Shutdown();
-        }
+            _mutex = new Mutex(true, AppName, out var createdNew);
 
-        base.OnStartup(e);
+            if (!createdNew)
+            {
+                MessageBox.Show("Приложение уже запущено", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                Current.Shutdown();
+                return;
+            }
+
+            base.OnStartup(e);
+            
+            try
+            {
+                VelopackApp.Build().Run();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка обновления: {ex.Message}", "Предупреждение", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            
+            var mainWindow = new MainWindow();
+            mainWindow.Show();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при запуске: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown();
+        }
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        _mutex?.Dispose();
+        base.OnExit(e);
     }
 }

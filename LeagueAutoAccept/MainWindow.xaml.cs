@@ -10,6 +10,9 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Hardcodet.Wpf.TaskbarNotification;
 using LeagueAutoAccept.Services;
+using MessageBox = System.Windows.MessageBox;
+using MessageBoxButton = System.Windows.MessageBoxButton;
+using MessageBoxImage = System.Windows.MessageBoxImage;
 
 namespace LeagueAutoAccept;
 
@@ -33,7 +36,7 @@ public partial class MainWindow : FluentWindow, INotifyPropertyChanged
             if (_isAutoAcceptEnabled)
             {
                 Debug.WriteLine("[IsAutoAcceptEnabled] Starting auto accept service");
-                _autoAcceptService.StartAutoAccept();
+                _ = _autoAcceptService.StartAutoAccept();
             }
             else
             {
@@ -45,42 +48,70 @@ public partial class MainWindow : FluentWindow, INotifyPropertyChanged
 
     public MainWindow()
     {
-        InitializeComponent();
-        Debug.WriteLine("MainWindow initialized.");
-        
-        Closing += (_, _) =>
+        try
         {
-            Debug.WriteLine("MainWindow closing.");
-            NotifyIcon.Dispose();
-        };
-
-        DataContext = this;
-        _autoAcceptService = new AutoAcceptService();
-        _ = CheckForUpdates();
+            _autoAcceptService = new AutoAcceptService();
+            DataContext = this;
+            
+            InitializeComponent();
+            Debug.WriteLine("MainWindow initialized.");
+            
+            Closing += (_, _) =>
+            {
+                Debug.WriteLine("MainWindow closing.");
+                NotifyIcon.Dispose();
+            };
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка инициализации окна: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            Application.Current.Shutdown();
+        }
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        await CheckForUpdates();
+        try
+        {
+            await CheckForUpdates();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Ошибка при проверке обновлений: {ex.Message}");
+        }
     }
 
     protected override void OnStateChanged(EventArgs e)
     {
-        if (WindowState == WindowState.Minimized)
+        try
         {
-            Hide();
-            NotifyIcon.Visibility = Visibility.Visible;
+            if (WindowState == WindowState.Minimized)
+            {
+                Hide();
+                NotifyIcon.Visibility = Visibility.Visible;
+            }
+            
+            base.OnStateChanged(e);
         }
-        
-        base.OnStateChanged(e);
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Ошибка при изменении состояния окна: {ex.Message}");
+        }
     }
     
     private void ShowWindow()
     {
-        Show();
-        WindowState = WindowState.Normal;
-        Activate();
-        NotifyIcon.Visibility = Visibility.Collapsed;
+        try
+        {
+            Show();
+            WindowState = WindowState.Normal;
+            Activate();
+            NotifyIcon.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Ошибка при показе окна: {ex.Message}");
+        }
     }
 
     private void MenuItemShow_OnClick(object sender, RoutedEventArgs e)

@@ -1,8 +1,10 @@
 using System;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Diagnostics;
 using LeagueAutoAccept.Utils;
 using Newtonsoft.Json.Linq;
 
@@ -11,13 +13,18 @@ namespace LeagueAutoAccept.Services;
 public class AutoAcceptService
 {
     private readonly HttpClient _httpClient;
+    private LcuCredentials? _credentials;
     private CancellationTokenSource? _cancellationTokenSource;
     private Task? _autoAcceptTask;
     private bool _isRunning;
 
     public AutoAcceptService()
     {
-        _httpClient = new HttpClient();
+        var handler = new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+        };
+        _httpClient = new HttpClient(handler);
     }
 
     public async Task StartAutoAccept()
@@ -26,16 +33,20 @@ public class AutoAcceptService
         
         try
         {
-            var credentials = await LcuUtils.GetLcuCredentials();
-            if (credentials == null)
+            Debug.WriteLine("[AutoAccept] Getting LCU credentials...");
+            _credentials = await LcuUtils.GetLcuCredentials();
+            if (_credentials == null)
             {
                 MessageBox.Show("Не удалось получить доступ к League Client. Убедитесь, что клиент запущен.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($"riot:{_credentials.Password}")));
+
             _cancellationTokenSource = new CancellationTokenSource();
             _isRunning = true;
-            _autoAcceptTask = Task.Run(() => AutoAcceptLoop(credentials, _cancellationTokenSource.Token));
+            Debug.WriteLine("[AutoAccept] Started polling loop");
+            _autoAcceptTask = Task.Run(() => AutoAcceptLoop(_cancellationTokenSource.Token));
         }
         catch (Exception ex)
         {
@@ -51,35 +62,43 @@ public class AutoAcceptService
         try
         {
             _cancellationTokenSource?.Cancel();
-            _autoAcceptTask?.Wait(1000); // Даем время на корректное завершение
             _cancellationTokenSource?.Dispose();
+            _autoAcceptTask = null;
             _isRunning = false;
+            Debug.WriteLine("[AutoAccept] Stopped");
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при остановке автопринятия: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            Debug.WriteLine($"[AutoAccept] Stop error: {ex.Message}");
         }
     }
 
-    private async Task AutoAcceptLoop(LcuCredentials credentials, CancellationToken cancellationToken)
+    private async Task AutoAcceptLoop(CancellationToken cancellationToken)
     {
+        if (_credentials == null) return;
+        
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
-                var response = await _httpClient.GetAsync(
-                    $"{credentials.Protocol}://127.0.0.1:{credentials.Port}/lol-matchmaking/v1/ready-check",
-                    cancellationToken);
+                Debug.WriteLine("[AutoAccept] Polling gameflow session...");
+                var response = await _httpClient.GetAsync($"https://127.0.0.1:{_credentials.Port}/lol-gameflow/v1/session", cancellationToken);
 
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync(cancellationToken);
                     var json = JObject.Parse(content);
-                    
-                    if (json["state"]?.ToString() == "InProgress")
+                    var phase = json["phase"]?.ToString();
+                    Debug.WriteLine($"[AutoAccept] Phase: {phase}");
+
+                    if (phase == "ReadyCheck")
                     {
-                        await AcceptMatch(credentials, cancellationToken);
+                        await AcceptMatch(cancellationToken);
                     }
+                }
+                else if ((int)response.StatusCode != 404)
+                {
+                    Debug.WriteLine($"[AutoAccept] Session response: {(int)response.StatusCode}");
                 }
             }
             catch (TaskCanceledException)
@@ -88,31 +107,25 @@ public class AutoAcceptService
             }
             catch (Exception ex)
             {
-                // Игнорируем ошибки 404 и другие временные проблемы
-                if (!ex.Message.Contains("404"))
-                {
-                    MessageBox.Show($"Ошибка при проверке матча: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                    break;
-                }
+                Debug.WriteLine($"[AutoAccept] Error: {ex.Message}");
             }
 
             await Task.Delay(1000, cancellationToken);
         }
     }
 
-    private async Task AcceptMatch(LcuCredentials credentials, CancellationToken cancellationToken)
+    private async Task AcceptMatch(CancellationToken cancellationToken)
     {
+        if (_credentials == null) return;
         try
         {
-            var response = await _httpClient.PostAsync(
-                $"{credentials.Protocol}://127.0.0.1:{credentials.Port}/lol-matchmaking/v1/ready-check/accept",
-                new StringContent(""),
-                cancellationToken);
+            var response = await _httpClient.PostAsync($"https://127.0.0.1:{_credentials.Port}/lol-matchmaking/v1/ready-check/accept", null, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
                 throw new Exception($"Ошибка при принятии матча: {response.StatusCode}");
             }
+            Debug.WriteLine("[AutoAccept] Match accepted!");
         }
         catch (Exception ex)
         {

@@ -97,7 +97,11 @@ public class LcuApi
             var credentials = await LcuUtils.GetLcuCredentials();
             if (credentials == null) return false;
             
-            var response = await HttpClient.GetAsync($"{credentials.Protocol}://127.0.0.1:{credentials.Port}/lol-gameflow/v1/session");
+            var request = new HttpRequestMessage(HttpMethod.Get, $"https://127.0.0.1:{credentials.Port}/lol-gameflow/v1/session");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Basic",
+                Convert.ToBase64String(Encoding.ASCII.GetBytes($"riot:{credentials.Password}")));
+
+            var response = await HttpClient.SendAsync(request);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
@@ -114,7 +118,15 @@ public class LcuApi
             var credentials = await LcuUtils.GetLcuCredentials();
             if (credentials == null) throw new Exception("Failed to get LCU credentials");
             
-            await HttpClient.PostAsync($"{credentials.Protocol}://127.0.0.1:{credentials.Port}/lol-matchmaking/v1/ready-check/accept", null);
+            var request = new HttpRequestMessage(HttpMethod.Post, $"https://127.0.0.1:{credentials.Port}/lol-matchmaking/v1/ready-check/accept");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Basic",
+                Convert.ToBase64String(Encoding.ASCII.GetBytes($"riot:{credentials.Password}")));
+
+            var response = await HttpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception($"Failed to accept match: {response.StatusCode}");
+            }
         }
         catch (Exception ex)
         {
