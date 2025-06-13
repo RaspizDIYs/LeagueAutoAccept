@@ -10,11 +10,11 @@
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishReadyToRun>true</PublishReadyToRun>
-    <Version>0.1.4</Version>
+    <Version>0.1.5</Version>
   </PropertyGroup>
-      <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
-      <PublishSingleFile>true</PublishSingleFile>
-    </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+    <PublishSingleFile>true</PublishSingleFile>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Velopack" Version="0.0.1298" />
