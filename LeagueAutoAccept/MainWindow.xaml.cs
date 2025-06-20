@@ -46,6 +46,32 @@ public partial class MainWindow : FluentWindow, INotifyPropertyChanged
         }
     }
 
+    private bool _isAutoLaunchEnabled;
+    public bool IsAutoLaunchEnabled
+    {
+        get => _isAutoLaunchEnabled;
+        set
+        {
+            if (_isAutoLaunchEnabled == value) return;
+            _isAutoLaunchEnabled = value;
+            OnPropertyChanged();
+            if (value)
+            {
+#if !DEBUG
+                Utils.AutoLaunchManager.Enable();
+#endif
+            }
+            else
+            {
+#if !DEBUG
+                Utils.AutoLaunchManager.Disable();
+#endif
+            }
+        }
+    }
+
+    private readonly Utils.LeagueWatcher _leagueWatcher = new();
+
     public MainWindow()
     {
         try
@@ -55,9 +81,23 @@ public partial class MainWindow : FluentWindow, INotifyPropertyChanged
             
             InitializeComponent();
             Debug.WriteLine("MainWindow initialized.");
-            
+
+            // init autolaunch state
+            _isAutoLaunchEnabled = Utils.AutoLaunchManager.IsEnabled();
+            OnPropertyChanged(nameof(IsAutoLaunchEnabled));
+
+            // если автозапуск включён и лига не запущена — прячемся до старта клиента
+            if (_isAutoLaunchEnabled && Process.GetProcessesByName("LeagueClientUx").Length == 0)
+            {
+                Hide();
+                NotifyIcon.Visibility = Visibility.Visible;
+                _leagueWatcher.LeagueStarted += () => Dispatcher.Invoke(ShowWindow);
+                _leagueWatcher.Start();
+            }
+
             Closing += (_, _) =>
             {
+                _leagueWatcher.Dispose();
                 Debug.WriteLine("MainWindow closing.");
                 NotifyIcon.Dispose();
             };
@@ -164,6 +204,14 @@ public partial class MainWindow : FluentWindow, INotifyPropertyChanged
         if (sender is MenuItem menuItem)
         {
             IsAutoAcceptEnabled = menuItem.IsChecked;
+        }
+    }
+
+    private void AutoLaunchToggle_OnToggled(object sender, RoutedEventArgs e)
+    {
+        if (sender is ToggleSwitch ts)
+        {
+            IsAutoLaunchEnabled = ts.IsChecked ?? false;
         }
     }
 
