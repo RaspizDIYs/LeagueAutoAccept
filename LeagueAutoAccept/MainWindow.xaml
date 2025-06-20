@@ -47,12 +47,21 @@
                          Margin="-15,-2,0,0" 
                          Title="{Binding Title, RelativeSource={RelativeSource AncestorType={x:Type ui:FluentWindow}}}"
                          ShowMaximize="False"
-                         ShowMinimize="True">
-            </ui:TitleBar>
+                         ShowMinimize="True"/>
+            <Button x:Name="SettingsButton"
+                    Content="&#xE713;"
+                    FontFamily="Segoe MDL2 Assets"
+                    FontSize="20"
+                    Padding="0"
+                    Width="36" Height="36"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Bottom"
+                    Margin="8"
+                    Click="SettingsButton_OnClick"/>
             <StackPanel Orientation="Vertical" 
                         VerticalAlignment="Center"
                         HorizontalAlignment="Center"
-                        Margin="0,20,0,0">
+                        Margin="0,10,0,0">
                 <ui:ToggleSwitch x:Name="AutoAcceptToggle" 
                                  Content="Автопринятие"
                                  VerticalAlignment="Center"

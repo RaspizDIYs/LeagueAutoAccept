@@ -10,6 +10,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Hardcodet.Wpf.TaskbarNotification;
 using LeagueAutoAccept.Services;
+using LeagueAutoAccept.Utils;
 using MessageBox = System.Windows.MessageBox;
 using MessageBoxButton = System.Windows.MessageBoxButton;
 using MessageBoxImage = System.Windows.MessageBoxImage;
@@ -67,6 +68,9 @@ public partial class MainWindow : FluentWindow, INotifyPropertyChanged
                 Utils.AutoLaunchManager.Disable();
 #endif
             }
+
+            Utils.AppSettings.Current.AutoLaunchEnabled = _isAutoLaunchEnabled;
+            Utils.AppSettings.Current.Save();
         }
     }
 
@@ -83,7 +87,7 @@ public partial class MainWindow : FluentWindow, INotifyPropertyChanged
             Debug.WriteLine("MainWindow initialized.");
 
             // init autolaunch state
-            _isAutoLaunchEnabled = Utils.AutoLaunchManager.IsEnabled();
+            _isAutoLaunchEnabled = Utils.AppSettings.Current.AutoLaunchEnabled;
             OnPropertyChanged(nameof(IsAutoLaunchEnabled));
 
             // если автозапуск включён и лига не запущена — прячемся до старта клиента
@@ -213,6 +217,12 @@ public partial class MainWindow : FluentWindow, INotifyPropertyChanged
         {
             IsAutoLaunchEnabled = ts.IsChecked ?? false;
         }
+    }
+
+    private void SettingsButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        var sw = new SettingsWindow { Owner = this };
+        sw.ShowDialog();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
