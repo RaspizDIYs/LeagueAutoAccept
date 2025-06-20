@@ -121,15 +121,19 @@ public class AutoAcceptService
         {
             var response = await _httpClient.PostAsync($"https://127.0.0.1:{_credentials.Port}/lol-matchmaking/v1/ready-check/accept", null, cancellationToken);
 
-            if (!response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
             {
-                throw new Exception($"Ошибка при принятии матча: {response.StatusCode}");
+                Debug.WriteLine("[AutoAccept] Match accepted!");
             }
-            Debug.WriteLine("[AutoAccept] Match accepted!");
+            else
+            {
+                // 409 Conflict / 500 Internal may occur if уже приняли или перешли к ChampSelect – игнорируем
+                Debug.WriteLine($"[AutoAccept] Accept response {(int)response.StatusCode} – ignored");
+            }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при принятии матча: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            Debug.WriteLine($"[AutoAccept] Accept error: {ex.Message}");
         }
     }
 } 
