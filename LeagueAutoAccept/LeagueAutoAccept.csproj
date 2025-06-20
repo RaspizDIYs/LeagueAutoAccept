@@ -10,7 +10,7 @@
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishReadyToRun>true</PublishReadyToRun>
-    <Version>0.1.5</Version>
+    <Version>0.1.6</Version>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
     <PublishSingleFile>true</PublishSingleFile>
