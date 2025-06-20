@@ -4,6 +4,9 @@ using System.Threading;
 using System.Windows;
 using Velopack;
 using Application = System.Windows.Application;
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace LeagueAutoAccept;
 
@@ -27,7 +30,7 @@ public partial class App : Application
 
             if (!createdNew)
             {
-                MessageBox.Show("Приложение уже запущено", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                ActivateOtherInstance();
                 Current.Shutdown();
                 return;
             }
@@ -58,4 +61,34 @@ public partial class App : Application
         _mutex?.Dispose();
         base.OnExit(e);
     }
+
+    private static void ActivateOtherInstance()
+    {
+        try
+        {
+            var current = Process.GetCurrentProcess();
+            var others = Process.GetProcessesByName(current.ProcessName).Where(p => p.Id != current.Id);
+            foreach (var p in others)
+            {
+                var handle = p.MainWindowHandle;
+                if (handle != IntPtr.Zero)
+                {
+                    ShowWindowAsync(handle, SW_RESTORE);
+                    SetForegroundWindow(handle);
+                    break;
+                }
+            }
+        }
+        catch
+        {
+            // ignore
+        }
+    }
+
+    private const int SW_RESTORE = 9;
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
 }
