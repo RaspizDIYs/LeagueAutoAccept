@@ -31,13 +31,11 @@ public class AutoAcceptService
         {
             Debug.WriteLine("[AutoAccept] Getting LCU credentials...");
             _credentials = await LcuUtils.GetLcuCredentials();
-            if (_credentials == null)
-            {
-                MessageBox.Show("Не удалось получить доступ к League Client. Убедитесь, что клиент запущен.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
 
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($"riot:{_credentials.Password}")));
+            if (_credentials != null)
+            {
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($"riot:{_credentials.Password}")));
+            }
 
             _cancellationTokenSource = new CancellationTokenSource();
             _isRunning = true;
@@ -46,7 +44,7 @@ public class AutoAcceptService
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при запуске автопринятия: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            Debug.WriteLine($"[AutoAccept] Ошибка при запуске: {ex.Message}");
             StopAutoAccept();
         }
     }

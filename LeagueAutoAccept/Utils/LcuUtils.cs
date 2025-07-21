@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using System.Windows;
 using System.ComponentModel;
 using System.Management;
 
@@ -53,7 +52,7 @@ public static class LcuUtils
 
             if (string.IsNullOrWhiteSpace(commandLine))
             {
-                MessageBox.Show("League Client не запущен или не удалось получить параметры запуска.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                // Клиент не запущен – молча возвращаем null, вызывающая сторона решит что делать
                 return Task.FromResult<LcuCredentials?>(null);
             }
 
@@ -62,7 +61,7 @@ public static class LcuUtils
 
             if (!portMatch.Success || !authTokenMatch.Success)
             {
-                MessageBox.Show("Не удалось найти порт или токен авторизации в параметрах запуска.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                // Не нашли необходимые параметры – возвращаем null без всплывающих окон
                 return Task.FromResult<LcuCredentials?>(null);
             }
 
@@ -74,7 +73,7 @@ public static class LcuUtils
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при получении данных клиента: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            Debug.WriteLine($"Ошибка при получении данных клиента: {ex.Message}");
             return Task.FromResult<LcuCredentials?>(null);
         }
     }
